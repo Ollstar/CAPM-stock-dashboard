@@ -105,6 +105,15 @@ app.layout = dbc.Container([
     ]),
     dbc.Row([
         dbc.Col(
+            dbc.InputGroup([
+                dbc.Input(id='stock-ticker', type='text', value='MSFT', placeholder='Enter a stock ticker'),
+                dbc.Button('Submit', id='submit-button', color='primary', className='ms-2')
+            ], className='mb-4'),
+            width=12
+        )
+    ]),
+    dbc.Row([
+        dbc.Col(
             dcc.Loading(
                 id="stock-price-loading",
                 type="circle",
@@ -123,16 +132,6 @@ app.layout = dbc.Container([
             width=12,
         )
     ]),
-    dbc.Row([
-        dbc.Col(
-            dbc.InputGroup([
-                dbc.Input(id='stock-ticker', type='text', value='MSFT', placeholder='Enter a stock ticker'),
-                dbc.Button('Submit', id='submit-button', color='primary', className='ms-2')
-            ], className='mb-4'),
-            width=12
-        )
-    ]),
-
     dbc.Row([
         dbc.Col(
             html.P('Risk-Free Rate (10-Year US Treasury Yield):'),
@@ -225,18 +224,21 @@ def update_graph_and_financials(n_clicks, stock_ticker):
         yaxis='y1'
     )
 
-    # Add earnings events to the plot
+    # Find earnings dates
     earnings_dates = [pd.to_datetime(earning['fiscalDateEnding'])
                     for earning in earnings_data]
+    earnings_dates = [date for date in earnings_dates if date in df.index]
+    latest_earning_date = pd.to_datetime(earnings_data[0]['fiscalDateEnding'])
+
     earnings_trace = go.Scatter(
-        x=[date for date in earnings_dates if date in df.index],
-        y=[df.loc[date, '5. adjusted close']
-        for date in earnings_dates if date in df.index],
-        mode='markers',
+        x=[latest_earning_date, latest_earning_date],
+        y=[df['5. adjusted close'].min(), df['5. adjusted close'].max()],
+        mode='lines',
         name='Earnings',
-        marker=dict(symbol='star', size=10, color='red'),
+        line=dict(color='red', width=2, dash='dash'),
         yaxis='y1'
     )
+    
 
     trace_capm_expected_returns = go.Scatter(
         x=df.loc[start_date:end_date].index,
@@ -267,8 +269,25 @@ def update_graph_and_financials(n_clicks, stock_ticker):
             bgcolor='rgba(255, 255, 255, 0.5)',
             bordercolor='rgba(0, 0, 0, 0.5)'
         ),
-        hovermode="x unified"
-    )
+        hovermode="x unified",
+        shapes=[
+                # Vertical line for each earnings date
+                dict(
+                    type='line',
+                    x0=date,
+                    x1=date,
+                    y0=0,
+                    y1=1,
+                    xref='x',
+                    yref='paper',
+                    line=dict(
+                        color='red',
+                        width=1,
+                        dash='dot'
+                    )
+                ) for date in earnings_dates
+            ]
+        )
 
 
     # Display company overview
