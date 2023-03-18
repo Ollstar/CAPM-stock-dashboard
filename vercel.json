@@ -6,8 +6,8 @@
       { "src": "/", "dest": "/app.py" }
     ],
     "env": {
-      "AA_API_KEY": "@AA_API_KEY",
-      "FRED_API_KEY": "@FRED_API_KEY"
+      "AA_API_KEY": "AA_API_KEY",
+      "FRED_API_KEY": "FRED_API_KEY"
     }
   }
   
