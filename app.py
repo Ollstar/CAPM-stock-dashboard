@@ -152,19 +152,11 @@ def serve_layout():
             width=12,
         )
     ]),
+    # Add the following row to display the risk-free rate chart at the bottom
     dbc.Row([
         dbc.Col(
-            html.P('Risk-Free Rate (10-Year US Treasury Yield):'),
-            width=6
+            dcc.Graph(id='risk-free-rate-graph', style={'height': '400px'})
         ),
-        dbc.Col(
-            dcc.Loading(
-                id="risk-free-rate-loading",
-                type="circle",
-                children=[dcc.Graph(id='risk-free-rate-graph')],
-            ),
-            width=6,
-        )
     ]),
    ], fluid=True)
 
