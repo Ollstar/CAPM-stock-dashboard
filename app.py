@@ -16,8 +16,8 @@ from flask_cors import CORS
 
 load_dotenv()
 
-AA_API_KEY = os.getenv('AA_API_KEY')
-FRED_API_KEY = os.getenv('FRED_API_KEY')
+AA_API_KEY = os.environ.get('AA_API_KEY')
+FRED_API_KEY = os.environ.get('FRED_API_KEY')
 
 
 def fetch_sp500_data():
