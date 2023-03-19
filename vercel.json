@@ -9,5 +9,8 @@
   "env": {
     "AA_API_KEY": "R7BACBWL3TXIZUMG",
     "FRED_API_KEY": "b5e257fbe61c0809fa85cd4bdce0db03"
-  }
+  },
+  "rewrites": [
+    { "source": "/(.*)", "destination": "stocksdash" }
+  ]
 }
