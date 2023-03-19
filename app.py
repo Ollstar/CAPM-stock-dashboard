@@ -44,7 +44,7 @@ def fetch_stock_data(ticker):
         response = requests.get(url)
         response.raise_for_status()
     except requests.exceptions.HTTPError as err:
-        if response.status_code == 403 and 'api limit reached' in response.text.lower():
+        if '5 calls per minute' in response.text.lower():
             raise AlphaVantageLimitReachedException('API request limit reached. Please try again in a minute.')
         else:
             raise err
@@ -52,6 +52,8 @@ def fetch_stock_data(ticker):
     data = response.json()
 
     if 'Error Message' in data or 'Note' in data:
+        # notify user that api limit reached and then set a timer for 1 minute and send request again
+        print(data[0])
         return None
 
     df = pd.DataFrame(data['Time Series (Daily)']).T
@@ -68,7 +70,14 @@ def fetch_company_overview(ticker):
     function = 'OVERVIEW'
 
     url = f"{base_url}function={function}&symbol={ticker}&apikey={AA_API_KEY}"
-    response = requests.get(url)
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as err:
+        if '5 calls per minute' in response.text.lower():
+            raise AlphaVantageLimitReachedException('API request limit reached. Please try again in a minute.')
+        else:
+            raise err
     data = response.json()
 
     return data
@@ -80,7 +89,14 @@ def fetch_earnings_data(ticker):
 
     url = f"{base_url}function={function}&symbol={ticker}&apikey={AA_API_KEY}"
     print(url)
-    response = requests.get(url)
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as err:
+        if '5 calls per minute' in response.text.lower():
+            raise AlphaVantageLimitReachedException('API request limit reached. Please try again in a minute.')
+        else:
+            raise err
     data = response.json()
 
     return data['quarterlyEarnings']
@@ -183,6 +199,8 @@ def update_graph_and_financials(n_clicks, stock_ticker):
     try:
         # Fetch stock data
         df = fetch_stock_data(stock_ticker)
+        # Handle the case where the API request limit is reached
+        
         if df is None:
             return go.Figure(), None, go.Figure(), disabled
     except AlphaVantageLimitReachedException as e:
