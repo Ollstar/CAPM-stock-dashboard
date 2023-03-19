@@ -8,3 +8,10 @@ __pycache__
 .idea
 .vscode
 *.sqlite3
+# .vercelignore
+__pycache__/
+*.pyo
+*.pyd
+*.log
+tests/
+myenv

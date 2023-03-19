@@ -11,6 +11,8 @@ import requests
 import yfinance as yf
 import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
+from flask import Flask
+from flask_cors import CORS
 
 load_dotenv()
 
@@ -95,11 +97,14 @@ def calculate_moving_averages(df, window):
 
 def normalize_data(df, column):
     return (df[column] - df[column].min()) / (df[column].max() - df[column].min())
+# Create a Flask app and wrap the Dash app with it
+server = Flask(__name__)
+CORS(server)
+app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP]) # type: ignore
 
-
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
-
-app.layout = dbc.Container([
+# Update the app.layout to be a function
+def serve_layout():
+    return dbc.Container([
     dbc.Row([
         dbc.Col(html.H1('Stock Market Dashboard', className='text-center mb-4'), width=12)
     ]),
@@ -146,8 +151,10 @@ app.layout = dbc.Container([
             width=6,
         )
     ]),
-], fluid=True)
+   ], fluid=True)
 
+
+app.layout = serve_layout
 
 
 @app.callback(
