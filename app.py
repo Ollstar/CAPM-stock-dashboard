@@ -31,13 +31,24 @@ def fetch_sp500_data():
     return df
 
 
+class AlphaVantageLimitReachedException(Exception):
+    pass
+
 def fetch_stock_data(ticker):
     base_url = 'https://www.alphavantage.co/query?'
     function = 'TIME_SERIES_DAILY_ADJUSTED'
     datatype = 'json'
 
     url = f"{base_url}function={function}&symbol={ticker}&apikey={AA_API_KEY}&datatype={datatype}"
-    response = requests.get(url)
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as err:
+        if response.status_code == 403 and 'api limit reached' in response.text.lower():
+            raise AlphaVantageLimitReachedException('API request limit reached. Please try again in a minute.')
+        else:
+            raise err
+
     data = response.json()
 
     if 'Error Message' in data or 'Note' in data:
@@ -49,6 +60,7 @@ def fetch_stock_data(ticker):
     df = df.astype(float)
 
     return df
+
 
 
 def fetch_company_overview(ticker):
@@ -67,6 +79,7 @@ def fetch_earnings_data(ticker):
     function = 'EARNINGS'
 
     url = f"{base_url}function={function}&symbol={ticker}&apikey={AA_API_KEY}"
+    print(url)
     response = requests.get(url)
     data = response.json()
 
@@ -106,7 +119,9 @@ app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTST
 def serve_layout():
     return dbc.Container([
     dbc.Row([
-        dbc.Col(html.H1('Stock Market Dashboard', className='text-center mb-4'), width=12)
+        dbc.Col(html.H1('Stock Market Dashboard', className='text-center mb-4'), width=12),
+        dbc.Col(html.Sub('API request limit: 5 per min - Refresh if hangs', className='text-center mb-4'), width=12)
+
     ]),
     dbc.Row([
         dbc.Col(
@@ -173,9 +188,15 @@ def update_graph_and_financials(n_clicks, stock_ticker):
     if n_clicks == 0:
         return go.Figure(), None, go.Figure(), disabled
 
-    # Fetch stock data
-    df = fetch_stock_data(stock_ticker)
-    if df is None:
+    try:
+        # Fetch stock data
+        df = fetch_stock_data(stock_ticker)
+        if df is None:
+            return go.Figure(), None, go.Figure(), disabled
+    except AlphaVantageLimitReachedException as e:
+        return go.Figure(), html.P(str(e)), go.Figure(), disabled
+    except Exception as e:
+        # Handle other exceptions here
         return go.Figure(), None, go.Figure(), disabled
 
     # Fetch S&P 500 data
@@ -310,7 +331,7 @@ def update_graph_and_financials(n_clicks, stock_ticker):
         ]),
         dbc.Row([
             dbc.Col(html.P(f"Revenue (TTM): ${float(company_overview['RevenueTTM']):,.0f}"), width=6),
-            dbc.Col(html.P(f"Net Income (TTM): ${float(company_overview['GrossProfitTTM']):,.0f}"), width=6),
+            dbc.Col(html.P(f"Gross Profit (TTM): ${float(company_overview['GrossProfitTTM']):,.0f}"), width=6),
         ]),
         dbc.Row([
             dbc.Col(html.P(f"Market Capitalization: ${float(company_overview['MarketCapitalization']):,.0f}"), width=6),
